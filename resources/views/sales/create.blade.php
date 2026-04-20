@@ -1,0 +1,178 @@
+@extends('layouts.app')
+@section('title', 'New Sale')
+
+@section('content')
+    <div class="mx-auto max-w-7xl">
+        <div class="mb-8">
+            <h1 class="page-title">New Sales Transaction</h1>
+            <p class="page-subtitle">Process customer sales with clear order details, pricing, and payment sections.</p>
+        </div>
+
+        @if($errors->any())
+            <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                <ul class="space-y-1">
+                    @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('sales.store') }}" x-data="salesForm()">
+            @csrf
+
+            <div class="card mb-6 p-8">
+                <h2 class="mb-5 text-xl font-bold text-slate-900">Customer Information</h2>
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                        <label class="form-label">Customer Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="customer_name" value="{{ old('customer_name') }}" class="form-input" placeholder="Enter customer name" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Contact Information</label>
+                        <input type="text" name="contact_info" value="{{ old('contact_info') }}" class="form-input" placeholder="Phone or email">
+                    </div>
+                    <div>
+                        <label class="form-label">Address</label>
+                        <input type="text" name="address" value="{{ old('address') }}" class="form-input" placeholder="Enter customer address">
+                    </div>
+                    <div>
+                        <label class="form-label">Sales Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="sales_date" value="{{ old('sales_date', date('Y-m-d')) }}" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Sales Person <span class="text-red-500">*</span></label>
+                        <select name="employee_id" class="form-input" required>
+                            <option value="">Select employee</option>
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}" {{ old('employee_id') == $emp->id ? 'selected' : '' }}>{{ $emp->full_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6 p-8">
+                <div class="mb-5 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-slate-900">Product Items</h2>
+                    <button type="button" @click="addItem()" class="btn-secondary">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Another Item</span>
+                    </button>
+                </div>
+
+                <template x-for="(item, index) in items" :key="index">
+                    <div class="soft-panel mb-4 p-4">
+                        <div class="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:items-end">
+                            <div class="xl:col-span-5">
+                                <label x-show="index === 0" class="form-label">Product</label>
+                                <select :name="`products[${index}][product_id]`" x-model="item.product_id" @change="setPrice(index)" class="form-input" required>
+                                    <option value="">Select product</option>
+                                    @foreach($products as $product)
+                                        <option value="{{ $product->id }}" data-price="{{ $product->unit_price }}" data-stock="{{ $product->inventory?->current_stock ?? 0 }}">
+                                            {{ $product->product_name }} (Stock: {{ $product->inventory?->current_stock ?? 0 }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="xl:col-span-2">
+                                <label x-show="index === 0" class="form-label">Quantity</label>
+                                <input type="number" :name="`products[${index}][quantity]`" x-model="item.quantity" @input="calcSubtotal(index)" class="form-input" min="1" required>
+                            </div>
+                            <div class="xl:col-span-2">
+                                <label x-show="index === 0" class="form-label">Unit Price</label>
+                                <input type="number" :name="`products[${index}][unit_price]`" x-model="item.price" @input="calcSubtotal(index)" class="form-input" min="0" step="0.01" required>
+                            </div>
+                            <div class="xl:col-span-2">
+                                <label x-show="index === 0" class="form-label">Subtotal</label>
+                                <input type="text" :value="formatPeso(item.subtotal)" class="form-input bg-slate-100" readonly>
+                            </div>
+                            <div class="xl:col-span-1 flex items-end">
+                                <button type="button" @click="removeItem(index)" x-show="items.length > 1" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 transition hover:bg-red-100">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="mt-6 flex justify-end border-t border-slate-100 pt-6">
+                    <div class="text-right">
+                        <div class="text-sm font-medium text-slate-500">Grand Total</div>
+                        <div class="text-3xl font-bold text-slate-900" x-text="formatPeso(grandTotal)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6 p-8">
+                <h2 class="mb-5 text-xl font-bold text-slate-900">Payment Details</h2>
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
+                    <div>
+                        <label class="form-label">Payment Method <span class="text-red-500">*</span></label>
+                        <select name="payment_method" class="form-input" required>
+                            <option value="">Select method</option>
+                            <option value="cash">Cash</option>
+                            <option value="gcash">GCash</option>
+                            <option value="paymaya">PayMaya</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="credit_card">Credit Card</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Payment Status <span class="text-red-500">*</span></label>
+                        <select name="payment_status" class="form-input" required>
+                            <option value="">Select status</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partial</option>
+                            <option value="unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Amount Paid (PHP) <span class="text-red-500">*</span></label>
+                        <input type="number" name="amount_paid" value="{{ old('amount_paid', 0) }}" class="form-input" min="0" step="0.01" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <a href="{{ route('sales.index') }}" class="btn-secondary">Cancel</a>
+                <button type="submit" class="btn-success">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Record Sale</span>
+                </button>
+            </div>
+        </form>
+    </div>
+@endsection
+
+@push('scripts')
+<script>
+function salesForm() {
+    return {
+        items: [{ product_id: '', quantity: 0, price: 0, subtotal: 0 }],
+        get grandTotal() {
+            return this.items.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0);
+        },
+        addItem() {
+            this.items.push({ product_id: '', quantity: 0, price: 0, subtotal: 0 });
+        },
+        removeItem(index) {
+            this.items.splice(index, 1);
+        },
+        calcSubtotal(index) {
+            const item = this.items[index];
+            item.subtotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
+        },
+        setPrice(index) {
+            const select = document.querySelectorAll(`[name="products[${index}][product_id]"]`)[0];
+            const option = select?.options[select?.selectedIndex];
+            if (option) {
+                this.items[index].price = parseFloat(option.dataset.price) || 0;
+                this.calcSubtotal(index);
+            }
+        },
+        formatPeso(val) {
+            return 'PHP ' + parseFloat(val || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+        }
+    }
+}
+</script>
+@endpush
