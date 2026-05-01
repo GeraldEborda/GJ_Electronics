@@ -24,7 +24,7 @@
 
                 <div>
                     <label class="form-label">Product Name</label>
-                    <input type="text" name="product_name" value="{{ old('product_name') }}" class="form-input" placeholder="Fire Extinguisher 5kg ABC" required>
+                    <input type="text" name="product_name" value="{{ old('product_name') }}" class="form-input" placeholder="" required>
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">
@@ -39,13 +39,13 @@
                     </div>
                     <div>
                         <label class="form-label">Model</label>
-                        <input type="text" name="model_number" value="{{ old('model_number') }}" class="form-input" placeholder="FE-5K-ABC">
+                        <input type="text" name="model_number" value="{{ old('model_number') }}" class="form-input" placeholder="">
                     </div>
                 </div>
 
                 <div>
                     <label class="form-label">Description</label>
-                    <textarea name="description" rows="4" class="form-input" placeholder="Describe the product">{{ old('description') }}</textarea>
+                    <textarea name="description" rows="4" class="form-input" placeholder="">{{ old('description') }}</textarea>
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">

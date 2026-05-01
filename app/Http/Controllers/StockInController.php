@@ -24,9 +24,9 @@ class StockInController extends Controller
 
     public function create()
     {
-        $suppliers = Supplier::orderBy('supplier_name')->get();
+        $suppliers = Supplier::active()->orderBy('supplier_name')->get();
         $employees = Employee::orderBy('first_name')->orderBy('last_name')->get();
-        $products  = Product::with('inventory')->get();
+        $products  = Product::active()->with('inventory')->get();
         return view('stock-in.create', compact('suppliers', 'employees', 'products'));
     }
 

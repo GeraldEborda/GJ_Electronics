@@ -13,7 +13,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with(['category', 'supplier', 'inventory'])
+        $products = Product::active()
+            ->with(['category', 'supplier', 'inventory'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
 
@@ -33,7 +34,7 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::orderBy('category_name')->get();
-        $suppliers = Supplier::orderBy('supplier_name')->get();
+        $suppliers = Supplier::active()->orderBy('supplier_name')->get();
 
         return view('products.create', compact('categories', 'suppliers'));
     }
@@ -66,7 +67,7 @@ class ProductController extends Controller
     {
         $product->load('inventory');
         $categories = Category::orderBy('category_name')->get();
-        $suppliers = Supplier::orderBy('supplier_name')->get();
+        $suppliers = Supplier::active()->orderBy('supplier_name')->get();
 
         return view('products.edit', compact('product', 'categories', 'suppliers'));
     }
@@ -99,9 +100,9 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->delete();
+        $product->update(['is_archived' => true]);
 
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        return redirect()->route('products.index')->with('success', 'Product archived successfully.');
     }
 
     protected function validateProduct(Request $request): array

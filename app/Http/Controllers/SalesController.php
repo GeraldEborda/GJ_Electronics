@@ -39,7 +39,7 @@ class SalesController extends Controller
     {
         $customers = Customer::all();
         $employees = Employee::orderBy('first_name')->orderBy('last_name')->get();
-        $products  = Product::with('inventory')->get();
+        $products  = Product::active()->with('inventory')->get();
         return view('sales.create', compact('customers', 'employees', 'products'));
     }
 

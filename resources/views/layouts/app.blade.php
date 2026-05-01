@@ -232,7 +232,7 @@
                     </div>
                     <div>
                         <div class="text-[15px] font-bold text-slate-900">GJ Electronics</div>
-                        <div class="text-xs text-slate-500">Sales & Inventory System</div>
+                        <div class="text-xs text-slate-500">POS System</div>
                     </div>
                 </div>
             </div>
@@ -262,14 +262,15 @@
                     <i class="fa-solid fa-box-open w-5 text-center"></i>
                     <span>Products</span>
                 </a>
+                <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-truck-field w-5 text-center"></i>
+                    <span>Suppliers</span>
+                </a>
                 <a href="{{ route('stock-in.index') }}" class="nav-link {{ request()->routeIs('stock-in.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-arrow-trend-up w-5 text-center"></i>
                     <span>Stock In</span>
                 </a>
-                <a href="{{ route('sales.index') }}" class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-cart-shopping w-5 text-center"></i>
-                    <span>Sales</span>
-                </a>
+               
                 <a href="{{ route('reports.index') }}" class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-chart-column w-5 text-center"></i>
                     <span>Reports</span>

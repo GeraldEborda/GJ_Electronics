@@ -6,7 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = ['supplier_id', 'category_id', 'model_number', 'product_name', 'description', 'unit_price'];
+    protected $fillable = ['supplier_id', 'category_id', 'model_number', 'product_name', 'description', 'unit_price', 'is_archived'];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_archived', false);
+    }
 
     public function category()
     {

@@ -77,11 +77,12 @@
                             <i class="fa-solid fa-pen-to-square"></i>
                             <span>Edit</span>
                         </a>
-                        <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Delete this product?')">
+                        <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Archive this product?')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-100">
-                                <i class="fa-solid fa-trash"></i>
+                            <button type="submit" class="flex h-12 items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-4 text-amber-700 transition hover:bg-amber-100">
+                                <i class="fa-solid fa-box-archive"></i>
+                                <span class="text-sm font-semibold">Archive</span>
                             </button>
                         </form>
                     </div>
