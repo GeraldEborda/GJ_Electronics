@@ -3,6 +3,14 @@
 
 @section('content')
     <div class="mx-auto max-w-4xl">
+        @php
+            $supplierOptions = $suppliers->map(fn($supplier) => [
+                'id' => $supplier->id,
+                'label' => $supplier->supplier_name,
+            ])->values();
+            $selectedSupplierLabel = $suppliers->firstWhere('id', old('supplier_id'))?->supplier_name ?? '';
+        @endphp
+
         <div class="mb-8">
             <h1 class="text-5xl font-black text-slate-900">Add New Product</h1>
             <p class="mt-2 text-xl text-slate-500">Enter the product details below.</p>
@@ -51,12 +59,21 @@
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
                         <label class="form-label">Supplier</label>
-                        <select name="supplier_id" class="form-input" required>
-                            <option value="">Select supplier</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" @selected(old('supplier_id') == $supplier->id)>{{ $supplier->supplier_name }}</option>
+                        <input type="hidden" name="supplier_id" id="product_supplier_id" value="{{ old('supplier_id') }}">
+                        <input
+                            type="text"
+                            id="product_supplier_lookup"
+                            list="product_supplier_lookup_list"
+                            value="{{ $selectedSupplierLabel }}"
+                            class="form-input"
+                            placeholder="Search supplier name"
+                            autocomplete="off"
+                        >
+                        <datalist id="product_supplier_lookup_list">
+                            @foreach($supplierOptions as $option)
+                                <option value="{{ $option['label'] }}"></option>
                             @endforeach
-                        </select>
+                        </datalist>
                     </div>
                     <div>
                         <label class="form-label">Unit Price (&#8369;)</label>
@@ -65,10 +82,6 @@
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">
-                    <div>
-                        <label class="form-label">Starting Stock</label>
-                        <input type="number" name="current_stock" value="{{ old('current_stock', 0) }}" class="form-input" min="0" required>
-                    </div>
                     <div>
                         <label class="form-label">Minimum Stock Level</label>
                         <input type="number" name="minimum_stock" value="{{ old('minimum_stock', 0) }}" class="form-input" min="0" required>
@@ -86,3 +99,14 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+setupSearchCombobox({
+    inputId: 'product_supplier_lookup',
+    hiddenId: 'product_supplier_id',
+    options: @json($supplierOptions),
+    requiredMessage: 'Please select a valid supplier from the list.'
+});
+</script>
+@endpush

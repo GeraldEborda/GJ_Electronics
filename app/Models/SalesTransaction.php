@@ -29,11 +29,29 @@ class SalesTransaction extends Model
 
     public function payment()
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasOne(Payment::class)->where('is_archived', false);
+    }
+
+    public function paymentRecords()
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function getSaleCodeAttribute()
     {
         return 'SALE-' . str_pad($this->id, 3, '0', STR_PAD_LEFT);
+    }
+
+    public function refreshStatusFromPayment(): void
+    {
+        $paymentStatus = $this->payment?->status;
+
+        $status = match ($paymentStatus) {
+            'paid' => 'completed',
+            'partial', 'unpaid' => 'pending',
+            default => 'pending',
+        };
+
+        $this->updateQuietly(['status' => $status]);
     }
 }

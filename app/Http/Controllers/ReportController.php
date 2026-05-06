@@ -49,9 +49,23 @@ class ReportController extends Controller
         // Inventory report
         $inventories = Inventory::with(['product.category', 'product.supplier'])->get();
 
+        // SQL view-backed reports
+        $productStockStatuses = DB::table('vw_product_stock_status')
+            ->orderBy('product_name')
+            ->get();
+
+        $detailedSalesView = DB::table('vw_sales_detailed')
+            ->orderByDesc('sales_date')
+            ->get();
+
+        $unsoldProductsView = DB::table('vw_unsold_products')
+            ->orderBy('product_name')
+            ->get();
+
         return view('reports.index', compact(
             'totalRevenue', 'totalTransactions', 'totalProducts', 'avgTransaction',
-            'monthlySales', 'topProducts', 'inventories'
+            'monthlySales', 'topProducts', 'inventories',
+            'productStockStatuses', 'detailedSalesView', 'unsoldProductsView'
         ));
     }
 }

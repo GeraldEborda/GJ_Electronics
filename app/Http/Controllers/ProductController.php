@@ -39,6 +39,19 @@ class ProductController extends Controller
         return view('products.create', compact('categories', 'suppliers'));
     }
 
+    public function show(Product $product)
+    {
+        $product->load([
+            'category',
+            'supplier',
+            'inventory',
+            'stockInDetails.stockIn',
+            'salesDetails.salesTransaction',
+        ]);
+
+        return view('products.show', compact('product'));
+    }
+
     public function store(Request $request)
     {
         $validated = $this->validateProduct($request);
@@ -55,7 +68,7 @@ class ProductController extends Controller
 
             Inventory::create([
                 'product_id' => $product->id,
-                'current_stock' => $validated['current_stock'] ?? 0,
+                'current_stock' => 0,
                 'minimum_stock' => $validated['minimum_stock'],
             ]);
         });
@@ -65,7 +78,6 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load('inventory');
         $categories = Category::orderBy('category_name')->get();
         $suppliers = Supplier::active()->orderBy('supplier_name')->get();
 
@@ -88,10 +100,7 @@ class ProductController extends Controller
 
             $product->inventory()->updateOrCreate(
                 ['product_id' => $product->id],
-                [
-                    'current_stock' => $validated['current_stock'] ?? 0,
-                    'minimum_stock' => $validated['minimum_stock'],
-                ]
+                ['minimum_stock' => $validated['minimum_stock']]
             );
         });
 
@@ -115,7 +124,6 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'minimum_stock' => ['required', 'integer', 'min:0'],
-            'current_stock' => ['nullable', 'integer', 'min:0'],
         ]);
     }
 }

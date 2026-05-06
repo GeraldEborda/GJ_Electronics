@@ -54,7 +54,7 @@
                 <div class="soft-panel space-y-3 p-4 text-sm">
                     <div class="flex justify-between">
                         <span class="text-slate-500">Method</span>
-                        <span class="font-semibold text-slate-700">{{ ucfirst(str_replace('_', ' ', $sale->payment->payment_method)) }}</span>
+                        <span class="font-semibold text-slate-700">{{ $sale->payment->paymentMethod?->payment_method_name }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Amount Paid</span>

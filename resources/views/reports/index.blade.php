@@ -50,6 +50,7 @@
         <div class="card inline-flex gap-1 p-2">
             <button @click="tab = 'sales'" :class="tab === 'sales' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" class="rounded-2xl px-6 py-3 text-sm font-semibold transition">Sales Report</button>
             <button @click="tab = 'inventory'" :class="tab === 'inventory' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" class="rounded-2xl px-6 py-3 text-sm font-semibold transition">Inventory Report</button>
+            <button @click="tab = 'views'" :class="tab === 'views' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'" class="rounded-2xl px-6 py-3 text-sm font-semibold transition">Views</button>
         </div>
 
         <div x-show="tab === 'sales'" x-transition class="space-y-5">
@@ -170,6 +171,113 @@
                                 </td>
                             </tr>
                         @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div x-show="tab === 'views'" x-transition class="space-y-5">
+            <div class="card p-6">
+                <h2 class="text-xl font-bold text-slate-900">Database Views Used in Reports</h2>
+                <!-- <p class="mt-2 text-sm text-slate-500">These sections are populated directly from the SQL views created in the database: <code>vw_product_stock_status</code>, <code>vw_sales_detailed</code>, and <code>vw_unsold_products</code>.</p> -->
+            </div>
+
+            <div class="card table-wrap">
+                <div class="section-head">
+                    <h2 class="text-xl font-bold text-slate-900">Product Stock Status</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product ID</th>
+                            <th>Product</th>
+                            <th>Current Stock</th>
+                            <th>Minimum Stock</th>
+                            <th>Stock Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($productStockStatuses as $row)
+                            <tr>
+                                <td>{{ $row->product_id }}</td>
+                                <td class="font-semibold text-slate-800">{{ $row->product_name }}</td>
+                                <td>{{ $row->current_stock }}</td>
+                                <td>{{ $row->minimum_stock }}</td>
+                                <td>
+                                    @if($row->stock_status === 'IN STOCK')
+                                        <span class="badge-green">In Stock</span>
+                                    @elseif($row->stock_status === 'LOW STOCK')
+                                        <span class="badge-yellow">Low Stock</span>
+                                    @else
+                                        <span class="badge-red">Out of Stock</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-10 text-center text-slate-400">No stock status records found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card table-wrap">
+                <div class="section-head">
+                    <h2 class="text-xl font-bold text-slate-900">Sales Detailed</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sales ID</th>
+                            <th>Sales Date</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($detailedSalesView as $row)
+                            <tr>
+                                <td class="font-semibold text-slate-800">SALE-{{ str_pad($row->sales_id, 3, '0', STR_PAD_LEFT) }}</td>
+                                <td>{{ \Carbon\Carbon::parse($row->sales_date)->format('Y-m-d') }}</td>
+                                <td>{{ $row->product_name }}</td>
+                                <td>{{ $row->quantity }}</td>
+                                <td>&#8369;{{ number_format($row->unit_price, 2) }}</td>
+                                <td class="font-semibold text-emerald-600">&#8369;{{ number_format($row->subtotal, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-10 text-center text-slate-400">No detailed sales records found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card table-wrap">
+                <div class="section-head">
+                    <h2 class="text-xl font-bold text-slate-900">Unsold Products</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product ID</th>
+                            <th>Product Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($unsoldProductsView as $row)
+                            <tr>
+                                <td>{{ $row->id }}</td>
+                                <td class="font-semibold text-slate-800">{{ $row->product_name }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="py-10 text-center text-slate-400">All products already have sales records.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

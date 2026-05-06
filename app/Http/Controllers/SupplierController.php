@@ -17,7 +17,8 @@ class SupplierController extends Controller
                 $query->where(function ($builder) use ($search) {
                     $builder
                         ->where('supplier_name', 'like', "%{$search}%")
-                        ->orWhere('contact_person', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
                         ->orWhere('contact_info', 'like', "%{$search}%")
                         ->orWhere('address', 'like', "%{$search}%");
                 });
@@ -31,6 +32,16 @@ class SupplierController extends Controller
     public function create()
     {
         return view('suppliers.create');
+    }
+
+    public function show(Supplier $supplier)
+    {
+        $supplier->load([
+            'products.inventory',
+            'stockIns.employee',
+        ]);
+
+        return view('suppliers.show', compact('supplier'));
     }
 
     public function store(Request $request)
@@ -67,7 +78,8 @@ class SupplierController extends Controller
     {
         return $request->validate([
             'supplier_name' => ['required', 'string', 'max:255'],
-            'contact_person' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'contact_info' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
         ]);

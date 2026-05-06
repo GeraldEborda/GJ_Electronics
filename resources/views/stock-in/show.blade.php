@@ -7,10 +7,16 @@
             <h1 class="page-title">{{ $stockIn->stock_in_code }}</h1>
             <p class="page-subtitle">Detailed view of this stock in transaction.</p>
         </div>
-        <a href="{{ route('stock-in.index') }}" class="btn-secondary">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>Back</span>
-        </a>
+        <div class="flex gap-3">
+            <a href="{{ route('stock-in.edit', $stockIn) }}" class="btn-primary">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Edit</span>
+            </a>
+            <a href="{{ route('stock-in.index') }}" class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Back</span>
+            </a>
+        </div>
     </div>
 
     <div class="mb-5 grid grid-cols-1 gap-5 xl:grid-cols-3">

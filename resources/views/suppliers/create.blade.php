@@ -21,34 +21,36 @@
         <div class="card p-8">
             <form method="POST" action="{{ route('suppliers.store') }}" class="space-y-6">
                 @csrf
-
                 <div>
                     <label class="form-label">Supplier Name</label>
-                    <input type="text" name="supplier_name" value="{{ old('supplier_name') }}" class="form-input" placeholder="" required>
+                    <input type="text" name="supplier_name" value="{{ old('supplier_name') }}" class="form-input" required>
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
-                        <label class="form-label">Contact Person</label>
-                        <input type="text" name="contact_person" value="{{ old('contact_person') }}" class="form-input" placeholder="">
+                        <label class="form-label">Contact First Name</label>
+                        <input type="text" name="first_name" value="{{ old('first_name') }}" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Contact Info</label>
-                        <input type="text" name="contact_info" value="{{ old('contact_info') }}" class="form-input" placeholder="">
+                        <label class="form-label">Contact Last Name</label>
+                        <input type="text" name="last_name" value="{{ old('last_name') }}" class="form-input">
                     </div>
                 </div>
 
-                <div>
-                    <label class="form-label">Address</label>
-                    <textarea name="address" rows="4" class="form-input" placeholder="">{{ old('address') }}</textarea>
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label class="form-label">Contact Info</label>
+                        <input type="text" name="contact_info" value="{{ old('contact_info') }}" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Address</label>
+                        <input type="text" name="address" value="{{ old('address') }}" class="form-input">
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4">
                     <a href="{{ route('suppliers.index') }}" class="btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Add Supplier</span>
-                    </button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-plus"></i><span>Add Supplier</span></button>
                 </div>
             </form>
         </div>

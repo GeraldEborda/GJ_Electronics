@@ -6,9 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class StockIn extends Model
 {
-    protected $fillable = ['supplier_id', 'employee_id', 'date_received', 'delivery_receipt_no', 'remarks'];
+    protected $fillable = ['supplier_id', 'employee_id', 'date_received', 'delivery_receipt_no', 'remarks', 'is_archived'];
 
-    protected $casts = ['date_received' => 'date'];
+    protected $casts = [
+        'date_received' => 'date',
+        'is_archived' => 'boolean',
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_archived', false);
+    }
 
     public function supplier()
     {

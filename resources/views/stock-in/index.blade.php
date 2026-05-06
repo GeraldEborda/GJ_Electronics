@@ -30,6 +30,7 @@
                         <th class="px-4 py-4 font-semibold">Items</th>
                         <th class="px-4 py-4 font-semibold">Total Amount</th>
                         <th class="px-4 py-4 font-semibold">Status</th>
+                        <th class="px-4 py-4 font-semibold">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -47,10 +48,21 @@
                             <td class="px-4 py-5 text-slate-700">{{ $stockIn->details->count() }} items</td>
                             <td class="px-4 py-5 font-bold text-slate-900">&#8369;{{ number_format($stockIn->total_amount, 0) }}</td>
                             <td class="px-4 py-5"><span class="badge-green">Completed</span></td>
+                            <td class="px-4 py-5">
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ route('stock-in.show', $stockIn) }}" class="btn-secondary !min-h-0 !px-4 !py-2">View</a>
+                                    <a href="{{ route('stock-in.edit', $stockIn) }}" class="btn-secondary !min-h-0 !px-4 !py-2">Edit</a>
+                                    <form method="POST" action="{{ route('stock-in.destroy', $stockIn) }}" onsubmit="return confirm('Archive this stock in transaction?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">Archive</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-7 py-14 text-center text-slate-400">No stock in transactions yet.</td>
+                            <td colspan="9" class="px-7 py-14 text-center text-slate-400">No stock in transactions yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

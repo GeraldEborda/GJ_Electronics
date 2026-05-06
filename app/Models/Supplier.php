@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Supplier extends Model
 {
-    protected $fillable = ['supplier_name', 'contact_person', 'contact_info', 'address', 'is_archived'];
+    protected $fillable = ['supplier_name', 'first_name', 'last_name', 'contact_info', 'address', 'is_archived'];
 
     protected $casts = [
         'is_archived' => 'boolean',
@@ -25,5 +25,10 @@ class Supplier extends Model
     public function stockIns()
     {
         return $this->hasMany(StockIn::class);
+    }
+
+    public function getContactPersonAttribute(): string
+    {
+        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
     }
 }

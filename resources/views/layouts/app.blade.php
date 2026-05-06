@@ -232,7 +232,7 @@
                     </div>
                     <div>
                         <div class="text-[15px] font-bold text-slate-900">GJ Electronics</div>
-                        <div class="text-xs text-slate-500">POS System</div>
+                        <div class="text-xs text-slate-500">Sales and Inventory Management System</div>
                     </div>
                 </div>
             </div>
@@ -266,11 +266,22 @@
                     <i class="fa-solid fa-truck-field w-5 text-center"></i>
                     <span>Suppliers</span>
                 </a>
+                <a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-user-group w-5 text-center"></i>
+                    <span>Customers</span>
+                </a>
                 <a href="{{ route('stock-in.index') }}" class="nav-link {{ request()->routeIs('stock-in.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-arrow-trend-up w-5 text-center"></i>
                     <span>Stock In</span>
                 </a>
-               
+                <a href="{{ route('sales.index') }}" class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-cart-shopping w-5 text-center"></i>
+                    <span>Sales</span>
+                </a>
+                <a href="{{ route('payments.index') }}" class="nav-link {{ request()->routeIs('payments.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-money-check-dollar w-5 text-center"></i>
+                    <span>Payments</span>
+                </a>
                 <a href="{{ route('reports.index') }}" class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-chart-column w-5 text-center"></i>
                     <span>Reports</span>
@@ -330,6 +341,49 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        window.setupSearchCombobox = function ({ inputId, hiddenId, options, requiredMessage }) {
+            const input = document.getElementById(inputId);
+            const hidden = document.getElementById(hiddenId);
+
+            if (!input || !hidden) {
+                return;
+            }
+
+            const normalizedOptions = (options || []).map(option => ({
+                id: String(option.id),
+                label: String(option.label),
+            }));
+
+            const findMatch = (value) => {
+                const normalizedValue = String(value || '').trim().toLowerCase();
+
+                return normalizedOptions.find(option => option.label.toLowerCase() === normalizedValue);
+            };
+
+            const syncHiddenValue = () => {
+                const match = findMatch(input.value);
+                hidden.value = match ? match.id : '';
+                input.setCustomValidity('');
+            };
+
+            input.addEventListener('input', syncHiddenValue);
+            input.addEventListener('change', syncHiddenValue);
+
+            input.form?.addEventListener('submit', (event) => {
+                syncHiddenValue();
+
+                if (!hidden.value) {
+                    input.setCustomValidity(requiredMessage || 'Please select a valid option from the list.');
+                    input.reportValidity();
+                    event.preventDefault();
+                    return;
+                }
+
+                input.setCustomValidity('');
+            });
+        };
+    </script>
     @stack('scripts')
 </body>
 </html>

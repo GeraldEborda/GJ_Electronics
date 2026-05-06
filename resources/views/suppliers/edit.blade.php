@@ -22,7 +22,6 @@
             <form method="POST" action="{{ route('suppliers.update', $supplier) }}" class="space-y-6">
                 @csrf
                 @method('PUT')
-
                 <div>
                     <label class="form-label">Supplier Name</label>
                     <input type="text" name="supplier_name" value="{{ old('supplier_name', $supplier->supplier_name) }}" class="form-input" required>
@@ -30,26 +29,29 @@
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
-                        <label class="form-label">Contact Person</label>
-                        <input type="text" name="contact_person" value="{{ old('contact_person', $supplier->contact_person) }}" class="form-input">
+                        <label class="form-label">Contact First Name</label>
+                        <input type="text" name="first_name" value="{{ old('first_name', $supplier->first_name) }}" class="form-input">
                     </div>
+                    <div>
+                        <label class="form-label">Contact Last Name</label>
+                        <input type="text" name="last_name" value="{{ old('last_name', $supplier->last_name) }}" class="form-input">
+                    </div>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
                     <div>
                         <label class="form-label">Contact Info</label>
                         <input type="text" name="contact_info" value="{{ old('contact_info', $supplier->contact_info) }}" class="form-input">
                     </div>
-                </div>
-
-                <div>
-                    <label class="form-label">Address</label>
-                    <textarea name="address" rows="4" class="form-input">{{ old('address', $supplier->address) }}</textarea>
+                    <div>
+                        <label class="form-label">Address</label>
+                        <input type="text" name="address" value="{{ old('address', $supplier->address) }}" class="form-input">
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4">
                     <a href="{{ route('suppliers.index') }}" class="btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>Save Changes</span>
-                    </button>
+                    <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i><span>Save Changes</span></button>
                 </div>
             </form>
         </div>

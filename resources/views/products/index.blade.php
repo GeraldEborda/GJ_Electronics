@@ -73,6 +73,10 @@
                     </div>
 
                     <div class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-5">
+                        <a href="{{ route('products.show', $product) }}" class="btn-secondary flex-1">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>View</span>
+                        </a>
                         <a href="{{ route('products.edit', $product) }}" class="btn-secondary flex-1">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <span>Edit</span>
