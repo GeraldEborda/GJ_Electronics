@@ -48,7 +48,7 @@ class SalesTransaction extends Model
 
         $status = match ($paymentStatus) {
             'paid' => 'completed',
-            'partial', 'unpaid' => 'pending',
+            'partial' => 'pending',
             default => 'pending',
         };
 

@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StockInController extends Controller
 {
@@ -17,7 +18,8 @@ class StockInController extends Controller
     {
         $stockIns = StockIn::active()
             ->with(['supplier', 'employee', 'details.product'])
-            ->latest('date_received')
+            ->orderByDesc('date_received')
+            ->orderByDesc('id')
             ->get();
 
         return view('stock-in.index', compact('stockIns'));
@@ -37,8 +39,12 @@ class StockInController extends Controller
                 'supplier_id' => $validated['supplier_id'],
                 'employee_id' => $validated['employee_id'],
                 'date_received' => $validated['date_received'],
-                'delivery_receipt_no' => $validated['delivery_receipt_no'] ?? null,
+                'delivery_receipt_no' => null,
                 'remarks' => $validated['remarks'] ?? null,
+            ]);
+
+            $stockIn->update([
+                'delivery_receipt_no' => StockIn::makeDeliveryReceiptNo($stockIn->id, $validated['date_received']),
             ]);
 
             $this->syncDetails($stockIn, $validated['products']);
@@ -69,18 +75,19 @@ class StockInController extends Controller
         $stockIn->load('details');
 
         DB::transaction(function () use ($stockIn, $validated) {
-            $this->rollbackInventory($stockIn->details);
+            $oldGoodQuantities = $this->goodQuantitiesByProduct($stockIn->details);
+
             $stockIn->details()->delete();
 
             $stockIn->update([
                 'supplier_id' => $validated['supplier_id'],
                 'employee_id' => $validated['employee_id'],
                 'date_received' => $validated['date_received'],
-                'delivery_receipt_no' => $validated['delivery_receipt_no'] ?? null,
                 'remarks' => $validated['remarks'] ?? null,
             ]);
 
             $this->syncDetails($stockIn, $validated['products']);
+            $this->subtractOldGoodQuantities($oldGoodQuantities);
         });
 
         return redirect()->route('stock-in.show', $stockIn)->with('success', 'Stock In transaction updated successfully.');
@@ -99,6 +106,7 @@ class StockInController extends Controller
             'suppliers' => Supplier::active()->orderBy('supplier_name')->get(),
             'employees' => Employee::orderBy('first_name')->orderBy('last_name')->get(),
             'products' => Product::active()->with('inventory')->orderBy('product_name')->get(),
+            'nextDeliveryReceiptNo' => StockIn::makeDeliveryReceiptNo((int) StockIn::max('id') + 1),
         ];
     }
 
@@ -106,12 +114,17 @@ class StockInController extends Controller
     {
         return $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
-            'delivery_receipt_no' => 'nullable|string|max:255',
             'date_received' => 'required|date',
             'employee_id' => 'required|exists:employees,id',
             'remarks' => 'nullable|string',
             'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.product_id' => [
+                'required',
+                Rule::exists('products', 'id')->where(fn ($query) => $query
+                    ->where('supplier_id', $request->input('supplier_id'))
+                    ->where('is_archived', false)
+                ),
+            ],
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.cost_per_unit' => 'required|numeric|min:0',
             'products.*.minimum_stock' => 'required|integer|min:0',
@@ -145,20 +158,24 @@ class StockInController extends Controller
         }
     }
 
-    protected function rollbackInventory($details): void
+    protected function goodQuantitiesByProduct($details)
     {
-        foreach ($details as $detail) {
-            if ($detail->condition_status !== 'good') {
-                continue;
-            }
+        return $details
+            ->where('condition_status', 'good')
+            ->groupBy('product_id')
+            ->map(fn ($items) => $items->sum('quantity_received'));
+    }
 
-            $inventory = Inventory::where('product_id', $detail->product_id)->first();
+    protected function subtractOldGoodQuantities($oldGoodQuantities): void
+    {
+        foreach ($oldGoodQuantities as $productId => $quantity) {
+            $inventory = Inventory::where('product_id', $productId)->first();
 
             if (! $inventory) {
                 continue;
             }
 
-            $inventory->current_stock = max(0, $inventory->current_stock - $detail->quantity_received);
+            $inventory->current_stock = max(0, $inventory->current_stock - $quantity);
             $inventory->save();
         }
     }

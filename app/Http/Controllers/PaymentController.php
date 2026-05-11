@@ -7,6 +7,7 @@ use App\Models\PaymentMethod;
 use App\Models\SalesTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -14,7 +15,8 @@ class PaymentController extends Controller
     {
         $payments = Payment::active()
             ->with(['salesTransaction.customer', 'paymentMethod'])
-            ->latest('payment_date')
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
             ->get();
 
         return view('payments.index', compact('payments'));
@@ -22,7 +24,11 @@ class PaymentController extends Controller
 
     public function create()
     {
-        $sales = SalesTransaction::doesntHave('payment')->with('customer')->latest('sales_date')->get();
+        $sales = SalesTransaction::doesntHave('payment')
+            ->with('customer')
+            ->orderByDesc('sales_date')
+            ->orderByDesc('id')
+            ->get();
         $paymentMethods = PaymentMethod::orderBy('payment_method_name')->get();
 
         return view('payments.create', compact('sales', 'paymentMethods'));
@@ -51,7 +57,8 @@ class PaymentController extends Controller
             ->where(function ($query) use ($payment) {
                 $query->doesntHave('payment')->orWhere('id', $payment->sales_transaction_id);
             })
-            ->latest('sales_date')
+            ->orderByDesc('sales_date')
+            ->orderByDesc('id')
             ->get();
         $paymentMethods = PaymentMethod::orderBy('payment_method_name')->get();
 
@@ -78,7 +85,7 @@ class PaymentController extends Controller
 
     protected function validatePayment(Request $request, ?int $ignoreId = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'sales_transaction_id' => [
                 'required',
                 'exists:sales_transactions,id',
@@ -89,7 +96,26 @@ class PaymentController extends Controller
             'payment_date' => ['required', 'date'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
-            'status' => ['required', 'in:paid,partial,unpaid'],
         ]);
+
+        $totalAmount = (float) SalesTransaction::whereKey($validated['sales_transaction_id'])->value('total_amount');
+
+        $this->validatePaymentAmount(
+            (float) $validated['amount_paid'],
+            $totalAmount
+        );
+
+        $validated['status'] = Payment::statusForAmount((float) $validated['amount_paid'], $totalAmount);
+
+        return $validated;
+    }
+
+    protected function validatePaymentAmount(float $amountPaid, float $totalAmount): void
+    {
+        if ($amountPaid > $totalAmount) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'Amount paid cannot exceed the sale total.',
+            ]);
+        }
     }
 }

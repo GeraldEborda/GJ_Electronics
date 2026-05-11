@@ -51,7 +51,7 @@
                         <td>{{ $sale->sales_date->format('Y-m-d') }}</td>
                         <td>{{ $sale->employee->full_name }}</td>
                         <td class="font-semibold text-slate-800">&#8369;{{ number_format($sale->total_amount, 2) }}</td>
-                        <td>{{ ucfirst($sale->payment?->status ?? $sale->status) }}</td>
+                        <td>{{ $sale->payment ? ($sale->payment->status === 'paid' ? 'Paid' : 'Partial') : ucfirst($sale->status) }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="py-16 text-center text-slate-400">No sales transactions yet.</td></tr>

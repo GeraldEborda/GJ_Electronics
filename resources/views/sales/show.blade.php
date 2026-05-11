@@ -69,10 +69,8 @@
                 <div class="mt-4 text-center">
                     @if($sale->payment->status === 'paid')
                         <span class="badge-green">Paid</span>
-                    @elseif($sale->payment->status === 'partial')
-                        <span class="badge-yellow">Partial Payment</span>
                     @else
-                        <span class="badge-red">Unpaid</span>
+                        <span class="badge-yellow">Partial Payment</span>
                     @endif
                 </div>
             @endif

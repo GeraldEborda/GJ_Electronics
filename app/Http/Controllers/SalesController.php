@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Inventory;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\SalesDetail;
@@ -19,14 +20,16 @@ class SalesController extends Controller
     public function index()
     {
         $sales = SalesTransaction::with(['customer', 'employee', 'payment.paymentMethod', 'details.product'])
-            ->latest('sales_date')
+            ->orderByDesc('sales_date')
+            ->orderByDesc('id')
             ->get();
 
         $totalSales = $sales->where('status', '!=', 'cancelled')->sum('total_amount');
-        $totalTransactions = $sales->count();
+        $totalTransactions = $sales->where('status', '!=', 'cancelled')->count();
         $avgTransaction = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
 
         $topProducts = SalesDetail::with('product')
+            ->whereHas('salesTransaction', fn ($query) => $query->where('status', '!=', 'cancelled'))
             ->select('product_id', DB::raw('SUM(quantity) as total_qty'), DB::raw('SUM(subtotal) as total_revenue'))
             ->groupBy('product_id')
             ->orderByDesc('total_qty')
@@ -86,6 +89,10 @@ class SalesController extends Controller
 
     public function edit(SalesTransaction $sale)
     {
+        if ($sale->status === 'cancelled') {
+            return redirect()->route('sales.show', $sale)->with('error', 'Cancelled sales cannot be edited.');
+        }
+
         $sale->load(['details', 'payment']);
         $customers = Customer::active()->orderBy('first_name')->orderBy('last_name')->get();
         $products = Product::active()->with('inventory')->get();
@@ -96,6 +103,10 @@ class SalesController extends Controller
 
     public function update(Request $request, SalesTransaction $sale)
     {
+        if ($sale->status === 'cancelled') {
+            return redirect()->route('sales.show', $sale)->with('error', 'Cancelled sales cannot be edited.');
+        }
+
         $validated = $this->validateSale($request);
         $oldQuantities = $sale->details->groupBy('product_id')->map(fn ($group) => $group->sum('quantity'));
         $requestedQuantities = $this->aggregateRequestedQuantities($validated['products']);
@@ -130,24 +141,27 @@ class SalesController extends Controller
     public function destroy(SalesTransaction $sale)
     {
         DB::transaction(function () use ($sale) {
+            if ($sale->status === 'cancelled') {
+                return;
+            }
+
             foreach ($sale->details as $detail) {
                 Inventory::where('product_id', $detail->product_id)->increment('current_stock', $detail->quantity);
             }
 
-            $sale->payment()?->delete();
-            $sale->delete();
+            $sale->payment()?->update(['is_archived' => true]);
+            $sale->update(['status' => 'cancelled']);
         });
 
-        return redirect()->route('sales.index')->with('success', 'Sale deleted successfully.');
+        return redirect()->route('sales.index')->with('success', 'Sale cancelled successfully.');
     }
 
     protected function validateSale(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'customer_id' => ['required', 'exists:customers,id'],
             'sales_date' => ['required', 'date'],
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
-            'payment_status' => ['required', 'in:paid,partial,unpaid'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'payment_date' => ['required', 'date'],
             'products' => ['required', 'array', 'min:1'],
@@ -155,11 +169,27 @@ class SalesController extends Controller
             'products.*.quantity' => ['required', 'integer', 'min:1'],
             'products.*.unit_price' => ['required', 'numeric', 'min:0'],
         ]);
+
+        $this->validatePaymentAmount(
+            (float) $validated['amount_paid'],
+            $this->calculateTotal($validated['products'])
+        );
+
+        return $validated;
     }
 
     protected function calculateTotal(array $products): float
     {
         return (float) collect($products)->sum(fn ($product) => $product['quantity'] * $product['unit_price']);
+    }
+
+    protected function validatePaymentAmount(float $amountPaid, float $totalAmount): void
+    {
+        if ($amountPaid > $totalAmount) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'Amount paid cannot exceed the sale total.',
+            ]);
+        }
     }
 
     protected function aggregateRequestedQuantities(array $products): Collection
@@ -198,7 +228,7 @@ class SalesController extends Controller
                 'payment_date' => $validated['payment_date'],
                 'amount_paid' => $validated['amount_paid'],
                 'payment_method_id' => $validated['payment_method_id'],
-                'status' => $validated['payment_status'],
+                'status' => Payment::statusForAmount((float) $validated['amount_paid'], (float) $sale->total_amount),
             ]
         );
     }

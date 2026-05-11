@@ -62,16 +62,12 @@
             </select>
         </div>
         <div>
-            <label class="form-label">Payment Status <span class="text-red-500">*</span></label>
-            <select name="payment_status" class="form-input" required>
-                <option value="paid" @selected(old('payment_status', $sale?->payment?->status) === 'paid')>Paid</option>
-                <option value="partial" @selected(old('payment_status', $sale?->payment?->status) === 'partial')>Partial</option>
-                <option value="unpaid" @selected(old('payment_status', $sale?->payment?->status) === 'unpaid')>Unpaid</option>
-            </select>
+            <label class="form-label">Payment Status</label>
+            <div class="form-input bg-slate-100 font-semibold" x-text="paymentStatusLabel"></div>
         </div>
         <div>
             <label class="form-label">Amount Paid (PHP) <span class="text-red-500">*</span></label>
-            <input type="number" name="amount_paid" value="{{ old('amount_paid', $sale?->payment?->amount_paid ?? 0) }}" class="form-input" min="0" step="0.01" required>
+            <input type="number" name="amount_paid" x-model.number="amountPaid" class="form-input" min="0" step="0.01" required>
         </div>
     </div>
 </div>

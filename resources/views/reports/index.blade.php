@@ -84,7 +84,7 @@
                                     @if($trend === 'up')
                                         <span class="text-xs font-semibold text-emerald-600"><i class="fa-solid fa-arrow-up mr-1"></i>Up</span>
                                     @elseif($trend === 'down')
-                                        <span class="text-xs font-semibold text-red-500"><i class="fa-solid fa-arrow-down mr-1"></i>Down</span>
+                                        <span class="text-xs font-semibold text-red-500"><i class="fa-solid fa-arrow-   down mr-1"></i>Down</span>
                                     @else
                                         <span class="text-xs text-slate-400">-</span>
                                     @endif

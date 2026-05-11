@@ -57,13 +57,13 @@
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
                                 <span class="text-base font-bold text-slate-800">{{ $sale->sale_code }}</span>
-                        @if($sale->payment)
+                                @if($sale->status === 'cancelled')
+                                    <span class="badge-red">Cancelled</span>
+                                @elseif($sale->payment)
                                     @if($sale->payment->status === 'paid')
                                         <span class="badge-green">Paid</span>
-                                    @elseif($sale->payment->status === 'partial')
-                                        <span class="badge-yellow">Partial</span>
                                     @else
-                                        <span class="badge-red">Unpaid</span>
+                                        <span class="badge-yellow">Partial</span>
                                     @endif
                                 @endif
                             </div>
@@ -80,12 +80,14 @@
                             <div class="font-bold text-emerald-600">&#8369;{{ number_format($sale->total_amount, 0) }}</div>
                             <div class="mt-1 flex items-center justify-end gap-3">
                                 <a href="{{ route('sales.show', $sale) }}" class="inline-block text-xs font-semibold text-primary hover:underline">View</a>
-                                <a href="{{ route('sales.edit', $sale) }}" class="inline-block text-xs font-semibold text-slate-500 hover:underline">Edit</a>
-                                <form method="POST" action="{{ route('sales.destroy', $sale) }}" onsubmit="return confirm('Delete this sale?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="inline-block text-xs font-semibold text-red-500 hover:underline">Delete</button>
-                                </form>
+                                @if($sale->status !== 'cancelled')
+                                    <a href="{{ route('sales.edit', $sale) }}" class="inline-block text-xs font-semibold text-slate-500 hover:underline">Edit</a>
+                                    <form method="POST" action="{{ route('sales.destroy', $sale) }}" onsubmit="return confirm('Cancel this sale and return the sold items to inventory?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="inline-block text-xs font-semibold text-red-500 hover:underline">Cancel</button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </div>

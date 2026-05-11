@@ -23,8 +23,7 @@
                         <td class="font-semibold text-emerald-600">&#8369;{{ number_format($payment->amount_paid, 2) }}</td>
                         <td>
                             @if($payment->status === 'paid') <span class="badge-green">Paid</span>
-                            @elseif($payment->status === 'partial') <span class="badge-yellow">Partial</span>
-                            @else <span class="badge-red">Unpaid</span>
+                            @else <span class="badge-yellow">Partial</span>
                             @endif
                         </td>
                         <td>

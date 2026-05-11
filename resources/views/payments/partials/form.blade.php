@@ -14,8 +14,14 @@
         </div>
     @endif
 
+    @php
+        $salesTotals = $sales->mapWithKeys(fn($sale) => [$sale->id => (float) $sale->total_amount]);
+        $selectedSaleId = old('sales_transaction_id', $payment?->sales_transaction_id);
+        $initialAmountPaid = (float) old('amount_paid', $payment?->amount_paid ?? 0);
+    @endphp
+
     <div class="card p-8">
-        <form method="POST" action="{{ $action }}" class="space-y-6">
+        <form method="POST" action="{{ $action }}" class="space-y-6" x-data='paymentForm(@json($salesTotals), @json((string) $selectedSaleId), @json($initialAmountPaid))'>
             @csrf
             @if($method !== 'POST')
                 @method($method)
@@ -23,10 +29,10 @@
 
             <div>
                 <label class="form-label">Sales Transaction</label>
-                <select name="sales_transaction_id" class="form-input" required>
+                <select name="sales_transaction_id" x-model="salesTransactionId" class="form-input" required>
                     <option value="">Select sale</option>
                     @foreach($sales as $sale)
-                        <option value="{{ $sale->id }}" @selected(old('sales_transaction_id', $payment?->sales_transaction_id) == $sale->id)>{{ $sale->sale_code }} - {{ $sale->customer->full_name }}</option>
+                        <option value="{{ $sale->id }}">{{ $sale->sale_code }} - {{ $sale->customer->full_name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -38,7 +44,7 @@
                 </div>
                 <div>
                     <label class="form-label">Amount Paid</label>
-                    <input type="number" name="amount_paid" value="{{ old('amount_paid', $payment?->amount_paid ?? 0) }}" min="0" step="0.01" class="form-input" required>
+                    <input type="number" name="amount_paid" x-model.number="amountPaid" min="0" step="0.01" class="form-input" required>
                 </div>
             </div>
 
@@ -54,11 +60,7 @@
                 </div>
                 <div>
                     <label class="form-label">Status</label>
-                    <select name="status" class="form-input" required>
-                        <option value="paid" @selected(old('status', $payment?->status) === 'paid')>Paid</option>
-                        <option value="partial" @selected(old('status', $payment?->status) === 'partial')>Partial</option>
-                        <option value="unpaid" @selected(old('status', $payment?->status) === 'unpaid')>Unpaid</option>
-                    </select>
+                    <div class="form-input bg-slate-100 font-semibold" x-text="paymentStatusLabel"></div>
                 </div>
             </div>
 
@@ -69,3 +71,17 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function paymentForm(salesTotals, selectedSaleId = '', initialAmountPaid = 0) {
+    return {
+        salesTransactionId: selectedSaleId || '',
+        amountPaid: Number(initialAmountPaid || 0),
+        salesTotals: salesTotals || {},
+        get saleTotal() { return Number(this.salesTotals[this.salesTransactionId] || 0); },
+        get paymentStatusLabel() { return this.salesTransactionId && Number(this.amountPaid || 0) >= this.saleTotal ? 'Paid' : 'Partial'; },
+    };
+}
+</script>
+@endpush

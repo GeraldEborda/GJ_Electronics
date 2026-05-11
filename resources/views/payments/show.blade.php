@@ -18,7 +18,7 @@
                 <div><dt class="mb-1 text-slate-500">Customer</dt><dd class="font-semibold text-slate-800">{{ $payment->salesTransaction->customer->full_name }}</dd></div>
                 <div><dt class="mb-1 text-slate-500">Payment Date</dt><dd class="font-semibold text-slate-800">{{ optional($payment->payment_date)->format('F j, Y') }}</dd></div>
                 <div><dt class="mb-1 text-slate-500">Method</dt><dd class="font-semibold text-slate-800">{{ $payment->paymentMethod?->payment_method_name }}</dd></div>
-                <div><dt class="mb-1 text-slate-500">Status</dt><dd class="font-semibold text-slate-800">{{ ucfirst($payment->status) }}</dd></div>
+                <div><dt class="mb-1 text-slate-500">Status</dt><dd class="font-semibold text-slate-800">{{ $payment->status === 'paid' ? 'Paid' : 'Partial' }}</dd></div>
             </dl>
         </div>
         <div class="card flex flex-col items-center justify-center p-7 text-center">

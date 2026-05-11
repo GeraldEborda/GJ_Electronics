@@ -35,6 +35,7 @@ return new class extends Migration
             FROM sales_transactions st
             JOIN sales_details sd ON st.id = sd.sales_transaction_id
             JOIN products p ON sd.product_id = p.id
+            WHERE st.status != 'cancelled'
             ORDER BY st.sales_date DESC
         SQL);
 
@@ -44,8 +45,13 @@ return new class extends Migration
                 p.id,
                 p.product_name
             FROM products p
-            LEFT JOIN sales_details sd ON p.id = sd.product_id
-            WHERE sd.product_id IS NULL
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sales_details sd
+                JOIN sales_transactions st ON st.id = sd.sales_transaction_id
+                WHERE sd.product_id = p.id
+                    AND st.status != 'cancelled'
+            )
         SQL);
     }
 

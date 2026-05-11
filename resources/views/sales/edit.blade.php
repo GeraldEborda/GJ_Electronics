@@ -31,7 +31,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('sales.update', $sale) }}" x-data='salesForm(@json($initialProducts))'>
+        <form method="POST" action="{{ route('sales.update', $sale) }}" x-data='salesForm(@json($initialProducts), @json((float) old('amount_paid', $sale?->payment?->amount_paid ?? 0)))'>
             @csrf
             @method('PUT')
 
@@ -82,7 +82,7 @@ setupSearchCombobox({
     requiredMessage: 'Please select a valid customer from the list.'
 });
 
-function salesForm(initialItems) {
+function salesForm(initialItems, initialAmountPaid = 0) {
     const normalized = (initialItems || []).map(item => ({
         product_id: item.product_id ?? '',
         quantity: Number(item.quantity ?? 0),
@@ -91,7 +91,9 @@ function salesForm(initialItems) {
     }));
     return {
         items: normalized.length ? normalized : [{ product_id: '', quantity: 0, unit_price: 0, subtotal: 0 }],
+        amountPaid: Number(initialAmountPaid || 0),
         get grandTotal() { return this.items.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); },
+        get paymentStatusLabel() { return this.grandTotal > 0 && Number(this.amountPaid || 0) >= this.grandTotal ? 'Paid' : 'Partial'; },
         addItem() { this.items.push({ product_id: '', quantity: 0, unit_price: 0, subtotal: 0 }); },
         removeItem(index) { this.items.splice(index, 1); },
         calcSubtotal(index) { const item = this.items[index]; item.subtotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0); },

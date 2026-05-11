@@ -14,7 +14,7 @@ class ReportController extends Controller
     public function index()
     {
         $totalRevenue      = SalesTransaction::where('status', '!=', 'cancelled')->sum('total_amount');
-        $totalTransactions = SalesTransaction::count();
+        $totalTransactions = SalesTransaction::where('status', '!=', 'cancelled')->count();
         $totalProducts     = Product::count();
         $avgTransaction    = $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0;
 
@@ -37,6 +37,7 @@ class ReportController extends Controller
 
         // Top products by revenue
         $topProducts = SalesDetail::with('product')
+            ->whereHas('salesTransaction', fn ($query) => $query->where('status', '!=', 'cancelled'))
             ->select('product_id',
                 DB::raw('SUM(quantity) as total_qty'),
                 DB::raw('SUM(subtotal) as total_revenue')

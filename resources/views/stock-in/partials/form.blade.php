@@ -16,6 +16,13 @@
         'id' => $supplier->id,
         'label' => $supplier->supplier_name,
     ])->values();
+    $productOptions = $products->map(fn($product) => [
+        'id' => $product->id,
+        'supplier_id' => $product->supplier_id,
+        'label' => $product->product_name,
+        'unit_price' => $product->unit_price,
+        'minimum_stock' => $product->inventory?->minimum_stock ?? 0,
+    ])->values();
     $selectedSupplierId = old('supplier_id', $stockIn?->supplier_id);
     $selectedSupplierLabel = $suppliers->firstWhere('id', $selectedSupplierId)?->supplier_name ?? '';
 @endphp
@@ -34,7 +41,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $action }}" x-data='stockInForm(@json($initialItems))'>
+    <form method="POST" action="{{ $action }}" x-data='stockInForm(@json($initialItems), @json($supplierOptions), @json($productOptions), @json($selectedSupplierId))'>
         @csrf
         @if($method !== 'POST')
             @method($method)
@@ -44,7 +51,7 @@
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div>
                     <label class="form-label">Supplier <span class="text-red-500">*</span></label>
-                    <input type="hidden" name="supplier_id" id="stockin_supplier_id" value="{{ $selectedSupplierId }}">
+                    <input type="hidden" name="supplier_id" id="stockin_supplier_id" x-model="supplier_id">
                     <input
                         type="text"
                         id="stockin_supplier_lookup"
@@ -53,6 +60,8 @@
                         class="form-input"
                         placeholder="Search supplier name"
                         autocomplete="off"
+                        @input.debounce.100ms="syncSupplierFromLookup()"
+                        @change="syncSupplierFromLookup()"
                     >
                     <datalist id="stockin_supplier_lookup_list">
                         @foreach($supplierOptions as $option)
@@ -62,7 +71,7 @@
                 </div>
                 <div>
                     <label class="form-label">Delivery Receipt No.</label>
-                    <input type="text" name="delivery_receipt_no" value="{{ old('delivery_receipt_no', $stockIn?->delivery_receipt_no) }}" class="form-input">
+                    <input type="text" value="{{ $stockIn?->delivery_receipt_no ?? $nextDeliveryReceiptNo }}" class="form-input bg-slate-100" readonly>
                 </div>
                 <div>
                     <label class="form-label">Date Received <span class="text-red-500">*</span></label>
@@ -99,17 +108,16 @@
                         <div class="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:items-end">
                             <div class="xl:col-span-3">
                                 <label x-show="index === 0" class="form-label">Product</label>
-                                <select :name="`products[${index}][product_id]`" x-model="item.product_id" @change="setDefaults(index)" class="form-input" required>
-                                    <option value="">Select product</option>
-                                    @foreach($products as $product)
+                                <select :name="`products[${index}][product_id]`" x-model="item.product_id" @change="setDefaults(index)" class="form-input" :disabled="!supplier_id" required>
+                                    <option value="" x-text="supplier_id ? 'Select product' : 'Select supplier first'"></option>
+                                    <template x-for="product in filteredProducts(item.product_id)" :key="product.id">
                                         <option
-                                            value="{{ $product->id }}"
-                                            data-price="{{ $product->unit_price }}"
-                                            data-min-stock="{{ $product->inventory?->minimum_stock ?? 0 }}"
-                                        >
-                                            {{ $product->product_name }}
-                                        </option>
-                                    @endforeach
+                                            :value="product.id"
+                                            :data-price="product.unit_price"
+                                            :data-min-stock="product.minimum_stock"
+                                            x-text="product.label"
+                                        ></option>
+                                    </template>
                                 </select>
                             </div>
                             <div class="xl:col-span-2">
@@ -169,9 +177,9 @@ setupSearchCombobox({
     requiredMessage: 'Please select a valid supplier from the list.'
 });
 
-function stockInForm(initialItems) {
+function stockInForm(initialItems, supplierOptions, productOptions, initialSupplierId) {
     const normalized = (initialItems || []).map(item => ({
-        product_id: item.product_id ?? '',
+        product_id: String(item.product_id ?? ''),
         quantity: Number(item.quantity ?? 1),
         cost_per_unit: Number(item.cost_per_unit ?? item.cost ?? 0),
         minimum_stock: Number(item.minimum_stock ?? 0),
@@ -180,9 +188,53 @@ function stockInForm(initialItems) {
     }));
 
     return {
+        supplier_id: String(initialSupplierId ?? ''),
+        supplierOptions: (supplierOptions || []).map(option => ({
+            id: String(option.id),
+            label: String(option.label),
+        })),
+        productOptions: (productOptions || []).map(product => ({
+            id: String(product.id),
+            supplier_id: String(product.supplier_id),
+            label: String(product.label),
+            unit_price: Number(product.unit_price || 0),
+            minimum_stock: Number(product.minimum_stock || 0),
+        })),
         items: normalized.length ? normalized : [{ product_id: '', quantity: 1, cost_per_unit: 0, minimum_stock: 0, condition: 'good', total: 0 }],
         get grandTotal() {
             return this.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+        },
+        syncSupplierFromLookup() {
+            const input = document.getElementById('stockin_supplier_lookup');
+            const value = String(input?.value || '').trim().toLowerCase();
+            const match = this.supplierOptions.find(option => option.label.toLowerCase() === value);
+            const nextSupplierId = match ? match.id : '';
+
+            if (nextSupplierId === this.supplier_id) {
+                return;
+            }
+
+            this.supplier_id = nextSupplierId;
+            this.removeProductsFromOtherSuppliers();
+        },
+        filteredProducts(selectedProductId = '') {
+            const selectedId = String(selectedProductId || '');
+
+            return this.productOptions.filter(product => {
+                return product.supplier_id === this.supplier_id || product.id === selectedId;
+            });
+        },
+        removeProductsFromOtherSuppliers() {
+            this.items.forEach((item, index) => {
+                const product = this.productOptions.find(option => option.id === String(item.product_id));
+
+                if (product && product.supplier_id !== this.supplier_id) {
+                    item.product_id = '';
+                    item.cost_per_unit = 0;
+                    item.minimum_stock = 0;
+                    this.calcTotal(index);
+                }
+            });
         },
         addItem() {
             this.items.push({ product_id: '', quantity: 1, cost_per_unit: 0, minimum_stock: 0, condition: 'good', total: 0 });
@@ -195,15 +247,14 @@ function stockInForm(initialItems) {
             item.total = (parseFloat(item.quantity) || 0) * (parseFloat(item.cost_per_unit) || 0);
         },
         setDefaults(index) {
-            const select = document.querySelector(`[name="products[${index}][product_id]"]`);
-            const option = select?.options[select.selectedIndex];
+            const product = this.productOptions.find(option => option.id === String(this.items[index].product_id));
 
-            if (!option) {
+            if (!product) {
                 return;
             }
 
-            this.items[index].cost_per_unit = parseFloat(option.dataset.price) || 0;
-            this.items[index].minimum_stock = parseInt(option.dataset.minStock || 0, 10);
+            this.items[index].cost_per_unit = product.unit_price;
+            this.items[index].minimum_stock = product.minimum_stock;
             this.calcTotal(index);
         },
         formatPeso(value) {

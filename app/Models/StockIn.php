@@ -42,4 +42,11 @@ class StockIn extends Model
     {
         return 'SI-' . str_pad($this->id, 3, '0', STR_PAD_LEFT);
     }
+
+    public static function makeDeliveryReceiptNo(int $id, ?string $dateReceived = null): string
+    {
+        $year = $dateReceived ? date('Y', strtotime($dateReceived)) : date('Y');
+
+        return 'DR-' . $year . '-' . str_pad($id, 4, '0', STR_PAD_LEFT);
+    }
 }

@@ -29,7 +29,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('sales.store') }}" x-data='salesForm(@json($initialProducts))'>
+        <form method="POST" action="{{ route('sales.store') }}" x-data='salesForm(@json($initialProducts), @json((float) old('amount_paid', 0)))'>
             @csrf
 
             <div class="card mb-6 p-8">
@@ -124,16 +124,12 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Payment Status <span class="text-red-500">*</span></label>
-                        <select name="payment_status" class="form-input" required>
-                            <option value="paid" @selected(old('payment_status') === 'paid')>Paid</option>
-                            <option value="partial" @selected(old('payment_status') === 'partial')>Partial</option>
-                            <option value="unpaid" @selected(old('payment_status') === 'unpaid')>Unpaid</option>
-                        </select>
+                        <label class="form-label">Payment Status</label>
+                        <div class="form-input bg-slate-100 font-semibold" x-text="paymentStatusLabel"></div>
                     </div>
                     <div>
                         <label class="form-label">Amount Paid (PHP) <span class="text-red-500">*</span></label>
-                        <input type="number" name="amount_paid" value="{{ old('amount_paid', 0) }}" class="form-input" min="0" step="0.01" required>
+                        <input type="number" name="amount_paid" x-model.number="amountPaid" class="form-input" min="0" step="0.01" required>
                     </div>
                 </div>
             </div>
@@ -155,7 +151,7 @@ setupSearchCombobox({
     requiredMessage: 'Please select a valid customer from the list.'
 });
 
-function salesForm(initialItems) {
+function salesForm(initialItems, initialAmountPaid = 0) {
     const normalized = (initialItems || []).map(item => ({
         product_id: item.product_id ?? '',
         quantity: Number(item.quantity ?? 0),
@@ -165,7 +161,9 @@ function salesForm(initialItems) {
 
     return {
         items: normalized.length ? normalized : [{ product_id: '', quantity: 0, unit_price: 0, subtotal: 0 }],
+        amountPaid: Number(initialAmountPaid || 0),
         get grandTotal() { return this.items.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); },
+        get paymentStatusLabel() { return this.grandTotal > 0 && Number(this.amountPaid || 0) >= this.grandTotal ? 'Paid' : 'Partial'; },
         addItem() { this.items.push({ product_id: '', quantity: 0, unit_price: 0, subtotal: 0 }); },
         removeItem(index) { this.items.splice(index, 1); },
         calcSubtotal(index) { const item = this.items[index]; item.subtotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0); },

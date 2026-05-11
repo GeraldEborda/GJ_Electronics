@@ -27,4 +27,9 @@ class Payment extends Model
     {
         return $this->belongsTo(PaymentMethod::class);
     }
+
+    public static function statusForAmount(float $amountPaid, float $totalAmount): string
+    {
+        return $totalAmount > 0 && $amountPaid >= $totalAmount ? 'paid' : 'partial';
+    }
 }
